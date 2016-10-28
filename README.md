@@ -1,15 +1,13 @@
-Instalar express
+Installer NPM Package
 
 ```Js
-$ npm install express body-parser request --save
+$ npm install --save
 ```
 
-descargar ngrok [aqui][ngrok]
 
-Ejecutar ngrok
 
 ```js
-$ ./ngrok http 3000
+$ ./ngrok http 4041
 ```
 
 [ngrok]: <https://ngrok.com/>

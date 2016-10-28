@@ -6,7 +6,7 @@ const request = require('request')
 const botBuilder = require('claudia-bot-builder');
 const rp = require('minimal-request-promise');
 const app = express()
-const TEXTS = require('./texts.js');
+const TEXTS = require('./lib/texts.js');
 const _ = require('underscore');
 
 app.set('port', (process.env.PORT || 4041))
