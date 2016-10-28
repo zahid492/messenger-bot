@@ -1,0 +1,29 @@
+{
+  "name": "oikhalibot",
+  "version": "1.0.0",
+  "description": "Instalar express",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codigofacilito/bot_facebook_messenger.git"
+  },
+  "author": "Zahid Rahman",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codigofacilito/bot_facebook_messenger/issues"
+  },
+  "homepage": "https://github.com/codigofacilito/bot_facebook_messenger#readme",
+  "dependencies": {
+    "body-parser": "^1.15.2",
+    "claudia-bot-builder": "^2.2.0",
+    "express": "^4.14.0",
+    "huh": "^1.1.4",
+    "minimal-request-promise": "^1.3.0",
+    "mongoose": "^4.6.5",
+    "request": "^2.76.0",
+    "underscore": "^1.8.3"
+  }
+}
