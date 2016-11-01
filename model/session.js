@@ -17,6 +17,7 @@ var SessionSchema = new Schema({
             index: '2d'       // create the geospatial index},
     },
     pickup_location: { type: String},
+    states:{ type: String},
 	destination_location: { type: String},
 	schedule:{ type: Date},
 	is_new:{ type: Boolean, default: true},

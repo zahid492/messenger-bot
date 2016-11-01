@@ -132,16 +132,25 @@ app.post('/webhook/', function(req, res) {
 
             // Iterate over each messaging event
             pageEntry.messaging.forEach(function(messagingEvent) {
-              console.log(messagingEvent);
+             // console.log(messagingEvent);
+              var sender=messagingEvent.sender.id;
+              console.log({sender:sender});
+              var sessionId = findOrCreateSession(sender)
+            //  console.log({sessionId:sessionId});
          
                 if (messagingEvent.optin) {
                     receivedAuthentication(messagingEvent);
                 } else if (messagingEvent.message) {
+                   console.log("Message");
+                  if(sessionId && sessionId.session===false){
+
                     receivedMessage(messagingEvent);
+                  }
                 } else if (messagingEvent.delivery) {
-                    receivedDeliveryConfirmation(messagingEvent);
+                    //receivedDeliveryConfirmation(messagingEvent);
                 } else if (messagingEvent.postback) {
-                    receivedPostback(messagingEvent);
+                   console.log("Postback");
+                   receivedPostback(messagingEvent);
                 } else if (messagingEvent.read) {
                     receivedMessageRead(messagingEvent);
                 } else {
@@ -157,6 +166,66 @@ app.post('/webhook/', function(req, res) {
         res.sendStatus(200);
     }
 });
+
+
+var sessions = {}
+
+var findOrCreateSession = function (fbid,state) {
+  var sessionData
+
+  // // DOES USER SESSION ALREADY EXIST?
+  // Object.keys(sessions).forEach(k => {
+  //   if (sessions[k].fbid === fbid) {
+  //     // YUP
+      
+  //     
+  //   }
+  // })
+ const SESSION_DURATION = 18000;
+ const nowis = new Date().getTime();
+  if(sessions[fbid]){
+    console.log("OLD Session ID");
+   
+        if (nowis - sessions[fbid].last_seen > SESSION_DURATION) {
+              sessions[fbid].session=false;
+              sessions[fbid].last_seen= nowis;
+              sessions[fbid].pickup_location= null;
+              sessions[fbid].destination_location=null;
+              sessions[fbid].pickup_coordinates= [];     // create the geospatial index},,
+              sessions[fbid].destination_coordinates=[];  
+
+        }else{
+              sessions[fbid].session=true;
+        }
+
+  }else{
+    
+    console.log("New Session ID");
+    sessions[fbid] = {
+      fbid: fbid,
+      state:state?state:'initial',
+      last_seen: nowis,
+      session:false,
+      pickup_location: null,
+      destination_location: null,
+      pickup_coordinates: [],     // create the geospatial index},,
+      destination_coordinates:[]    
+    }
+
+  }
+
+  // No session so we will create one
+
+ console.log(nowis);
+ console.log(nowis-sessions[fbid].last_seen);
+
+
+
+  return sessions[fbid];
+}
+
+
+
 
 /*RECEIVE MESSAGE START*/
 function receivedMessage(event) {
@@ -422,10 +491,10 @@ function sendCustomMessage(recipientId,messageText) {
 
 console.log("sendCustoMessage "+ messageText);
 
-    switch (messageText.toLowerCase()) {
+    switch (messageText) {
 
-      case 'hi':
-        sendWelcomeMessage(recipientId);
+      case 'TAKE_A_RIDE':
+        sendTakeaRide(recipientId);
         break        
 
       case 'hello':
@@ -471,6 +540,30 @@ console.log("sendCustoMessage "+ messageText);
     }
     previousMessageHash[recipientId] = messageText.toLowerCase();
 }
+
+
+
+function sendTakeaRide(recipientId){
+
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: 'Step 1: Search from Map or type Pickup',
+      metadata:'PICKUP',
+      quick_replies: [
+        {
+          "content_type":"location",
+          "title":"PICKUP",
+          "payload":"PICKUP"
+        }       
+      ]
+    }
+  };
+
+  callSendAPI(messageData);
+};
 function sendWelcomeMessage(recipientId) {
 
   var nameString = firstName + " " + lastName;
@@ -480,13 +573,24 @@ function sendWelcomeMessage(recipientId) {
       id: recipientId
     },
     message: {
-      text: 'Hi '+nameString+ 'please select option from the left menu',
+      text: 'Hi '+nameString+ ', please select option from the left menu or tap any option in below',
       quick_replies: [
         {
           "content_type":"text",
-          "title":"Home",
-          "payload":"home"
-        }
+          "title":"Get a RIDE",
+          "payload":"TAKE_A_RIDE"
+        },
+        {
+          "content_type":"text",
+          "title":"Query",
+          "payload":"QUERY"
+        },
+       {
+          "content_type":"text",
+          "title":"Complain",
+          "payload":"COMPLAIN"
+        }        
+
       ]
     }
   };
@@ -571,30 +675,7 @@ function addPersistentMenu(){
 
 }
 
-function greetingText(){
- request({
-    url: 'https://graph.facebook.com/v2.6/me/thread_settings',
-    qs: { access_token: PAGE_ACCESS_TOKEN },
-    method: 'POST',
-    json:{
-        setting_type : "greeting",
-        greeting:
-            {
-              "text":"Hi {{user_first_name}}, welcome to this bot."
-            }
-          
-    }
 
-}, function(error, response, body) {
-  //  console.log(response)
-    if (error) {
-        console.log('Error sending messages: ', error)
-    } else if (response.body.error) {
-        console.log('Error: ', response.body.error)
-    }
-})
-
-}
 
 function getStartedButton(){
  request({
@@ -623,10 +704,11 @@ function getStartedButton(){
 }
 
 getStartedButton();
-greetingText();
+
 addPersistentMenu();
 
 
+var sessions = {}
 
 
 
