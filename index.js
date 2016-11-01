@@ -133,13 +133,8 @@ app.post('/webhook/', function(req, res) {
             // Iterate over each messaging event
             pageEntry.messaging.forEach(function(messagingEvent) {
               console.log(messagingEvent);
-              if(messagingEvent.postback){
-                receivedPostback(messagingEvent);
-                }
-              if (messagingEvent.message) {
-                receivedMessage(messagingEvent);
-                }              
-/*                if (messagingEvent.optin) {
+         
+                if (messagingEvent.optin) {
                     receivedAuthentication(messagingEvent);
                 } else if (messagingEvent.message) {
                     receivedMessage(messagingEvent);
@@ -151,7 +146,7 @@ app.post('/webhook/', function(req, res) {
                     receivedMessageRead(messagingEvent);
                 } else {
                     console.log("Webhook received unknown messagingEvent: ", messagingEvent);
-                }*/
+                }
             });
         });
 
@@ -221,8 +216,6 @@ function callGetLocaleAPI(event, handleReceived) {
     });
 }
 function handleReceivedMessage(event) {
-  console.log(event);
-
   var senderID = event.sender.id;
   var recipientID = event.recipient.id;
   var timeOfMessage = event.timestamp;
@@ -236,8 +229,12 @@ function handleReceivedMessage(event) {
 
   // You may get a text or attachment but not both
   var messageText = message.text;
+  console.log(messageText);
   var messageAttachments = message.attachments;
+  console.log(messageAttachments);
   var quickReply = message.quick_reply;
+  console.log(quickReply);
+
 
   if (isEcho) {
     // Just logging message echoes to console
@@ -246,21 +243,110 @@ function handleReceivedMessage(event) {
     return;
   } else if (quickReply) {
     var quickReplyPayload = quickReply.payload;
-//console.log("Quick reply for message %s with payload %s",
-// messageId, quickReplyPayload);
+//    console.log("Quick reply for message %s with payload %s",
+ //     messageId, quickReplyPayload);
 
     messageText = quickReplyPayload;
     sendCustomMessage(senderID,messageText);
     return;
   }
 
-  if(messageText){
-        sendCustomMessage(senderID,messageText);
+  if (messageText) {
+    if((isStopped == true) && (messageText !== "start")){
+      return;
+    }
+  console.log("Received message for user %d and page %d at %d with message: %s", 
+    senderID, recipientID, timeOfMessage,messageText);
+
+    // If we receive a text message, check to see if it matches any special
+    // keywords and send back the corresponding example. Otherwise, just echo
+    // the text we received.
+    switch (messageText.toLowerCase()) {
+      case 'hi':
+        sendWelcomeMessage(senderID);
+        break;
+
+      case 'hello':
+        sendWelcomeMessage(senderID);
+        break;
+
+      case 'audio':
+        sendAudioMessage(senderID);
+        break;
+
+      case 'video':
+        sendVideoMessage(senderID);
+        break;
+
+      case 'file':
+        sendFileMessage(senderID);
+        break;
+
+      case 'button':
+        sendButtonMessage(senderID);
+        break;
+
+      case 'generic':
+        sendGenericMessage(senderID);
+        break;
+
+      case 'receipt':
+        sendReceiptMessage(senderID);
+        break;
+
+      case 'quick reply':
+        sendQuickReply(senderID);
+        break        
+
+      case 'read receipt':
+        sendReadReceipt(senderID);
+        break        
+
+      case 'typing on':
+        sendTypingOn(senderID);
+        break        
+
+      case 'typing off':
+        sendTypingOff(senderID);
+        break        
+
+      case 'user info':
+        if(firstName)
+            sendTextMessage(senderID,firstName);
+        break        
+
+      case 'add menu':
+        addPersistentMenu();
+        break        
+
+      case 'remove menu':
+        removePersistentMenu();
+        break        
+
+      case 'stop':  // Stop the Bot from responding if the admin sends this messages
+         if(senderID ==  1073962542672604) {
+            console.log("Stoppping bot");
+            isStopped = true;
+         }
+         break
+
+      case 'start': // start up again
+         if(senderID ==  1073962542672604)  {
+            console.log("Starting bot");
+            isStopped = false;
+         }
+         break
+
+      default:
+         sendEnteredMessage(senderID, messageText);
+
+    }
+  } else if (messageAttachments) {
+    if(messageAttachments[0].payload.url)
+        sendJsonMessage(senderID, messageAttachments[0].payload.url);
   }
-
-
-
 }
+
 /*RECEIVE MESSAGE END*/
 
 
@@ -273,6 +359,45 @@ function receivedPostback(event) {
   sendTextMessage(event, handleReceivedPostback);
 }
 
+
+function receivedMessageRead(event) {
+  if(isStopped == true)
+  {
+    return;
+  }
+  var senderID = event.sender.id;
+  var recipientID = event.recipient.id;
+
+  // All messages before watermark (a timestamp) or sequence have been seen.
+  var watermark = event.read.watermark;
+  var sequenceNumber = event.read.seq;
+
+  console.log("Received message read event for watermark %d and sequence " +
+    "number %d", watermark, sequenceNumber);
+}
+
+
+function receivedDeliveryConfirmation(event) {
+  if(isStopped == true)
+  {
+    return;
+  }
+  var senderID = event.sender.id;
+  var recipientID = event.recipient.id;
+  var delivery = event.delivery;
+  var messageIDs = delivery.mids;
+  var watermark = delivery.watermark;
+  var sequenceNumber = delivery.seq;
+
+  if (messageIDs) {
+    messageIDs.forEach(function(messageID) {
+      console.log("Received delivery confirmation for message ID: %s", 
+        messageID);
+    });
+  }
+
+  console.log("All message before %d were delivered.", watermark);
+}
 
 function handleReceivedPostback(event) {
   var senderID = event.sender.id;
@@ -296,15 +421,15 @@ function handleReceivedPostback(event) {
 function sendCustomMessage(recipientId,messageText) {
 
 console.log("sendCustoMessage "+ messageText);
-sendLocale(recipientId);
-/*    switch (messageText.toLowerCase()) {
 
-      case 'joke':
-        sendJoke(recipientId);
+    switch (messageText.toLowerCase()) {
+
+      case 'hi':
+        sendWelcomeMessage(recipientId);
         break        
 
-      case 'image':
-        sendRandomImage(recipientId);
+      case 'hello':
+        sendWelcomeMessage(recipientId);
         break        
 
       case 'who':
@@ -343,10 +468,10 @@ sendLocale(recipientId);
       default:
          sendJsonMessage(recipientId,messageText);
 
-    }*/
+    }
     previousMessageHash[recipientId] = messageText.toLowerCase();
 }
-function sendLocale(recipientId) {
+function sendWelcomeMessage(recipientId) {
 
   var nameString = firstName + " " + lastName;
 
@@ -355,7 +480,7 @@ function sendLocale(recipientId) {
       id: recipientId
     },
     message: {
-      text: nameString,
+      text: 'Hi '+nameString+ 'please select option from the left menu',
       quick_replies: [
         {
           "content_type":"text",
@@ -446,6 +571,59 @@ function addPersistentMenu(){
 
 }
 
+function greetingText(){
+ request({
+    url: 'https://graph.facebook.com/v2.6/me/thread_settings',
+    qs: { access_token: PAGE_ACCESS_TOKEN },
+    method: 'POST',
+    json:{
+        setting_type : "greeting",
+        greeting:
+            {
+              "text":"Hi {{user_first_name}}, welcome to this bot."
+            }
+          
+    }
+
+}, function(error, response, body) {
+  //  console.log(response)
+    if (error) {
+        console.log('Error sending messages: ', error)
+    } else if (response.body.error) {
+        console.log('Error: ', response.body.error)
+    }
+})
+
+}
+
+function getStartedButton(){
+ request({
+    url: 'https://graph.facebook.com/v2.6/me/thread_settings',
+    qs: { access_token: PAGE_ACCESS_TOKEN },
+    method: 'POST',
+    json:{
+        setting_type : "call_to_actions",
+        thread_state : "new_thread",
+        call_to_actions:[
+            {
+              payload:"GET_STARTED_BUTTON"
+            }
+          ]
+    }
+
+}, function(error, response, body) {
+  //  console.log(response)
+    if (error) {
+        console.log('Error sending messages: ', error)
+    } else if (response.body.error) {
+        console.log('Error: ', response.body.error)
+    }
+})
+
+}
+
+getStartedButton();
+greetingText();
 addPersistentMenu();
 
 
