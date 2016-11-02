@@ -132,20 +132,38 @@ app.post('/webhook/', function(req, res) {
 
             // Iterate over each messaging event
             pageEntry.messaging.forEach(function(messagingEvent) {
-             // console.log(messagingEvent);
+              console.log("Code Input");
               var sender=messagingEvent.sender.id;
               console.log({sender:sender});
               var sessionId = findOrCreateSession(sender)
-            //  console.log({sessionId:sessionId});
-         
+              console.log({messagingEvent:messagingEvent});
+                
                 if (messagingEvent.optin) {
+                  console.log("Message receive nsert")
                     receivedAuthentication(messagingEvent);
                 } else if (messagingEvent.message) {
-                   console.log("Message");
-                  if(sessionId && sessionId.session===false){
+                  console.log("Message event insert")
+                   // console.log({attachments:messagingEvent.message.attachments[0].title});
+                   // console.log({Message:messagingEvent.message});
+                   //messagingEvent.message.text
+                   if(messagingEvent.message.attachments && messagingEvent.message.attachments[0].type==='location' && sessionId.state==='PICKUP_BROWSE'){
+                        sessions[sender].pickup_coordinates=[messagingEvent.message.attachments[0].payload.coordinates.lat,messagingEvent.message.attachments[0].payload.coordinates.long];
+                        sessions[sender].pickup_location=messagingEvent.message.attachments[0].title;
+                        setDestinationRide(sender);
+                        console.log(sessions[sender]);
+                   }else{
+                      console.log("Message event insert")
+                        if(messagingEvent.message.attachments && messagingEvent.message.attachments[0].type==='location'  && sessionId.state==='DESTINATION_BROWSE'){
+                        sessions[sender].destination_coordinates=[messagingEvent.message.attachments[0].payload.coordinates.lat,messagingEvent.message.attachments[0].payload.coordinates.long];
+                        sessions[sender].destination_location=messagingEvent.message.attachments[0].title;
+                        console.log(sessions[sender]);
+                        setSchdulingRide(sender);
+                        }else{
+                          receivedMessage(messagingEvent);  
+                        }
+                        
+                   }
 
-                    receivedMessage(messagingEvent);
-                  }
                 } else if (messagingEvent.delivery) {
                     //receivedDeliveryConfirmation(messagingEvent);
                 } else if (messagingEvent.postback) {
@@ -181,7 +199,7 @@ var findOrCreateSession = function (fbid,state) {
   //     
   //   }
   // })
- const SESSION_DURATION = 18000;
+ const SESSION_DURATION = 180000;
  const nowis = new Date().getTime();
   if(sessions[fbid]){
     console.log("OLD Session ID");
@@ -200,17 +218,17 @@ var findOrCreateSession = function (fbid,state) {
 
   }else{
     
-    console.log("New Session ID");
-    sessions[fbid] = {
-      fbid: fbid,
-      state:state?state:'initial',
-      last_seen: nowis,
-      session:false,
-      pickup_location: null,
-      destination_location: null,
-      pickup_coordinates: [],     // create the geospatial index},,
-      destination_coordinates:[]    
-    }
+            console.log("New Session ID");
+            sessions[fbid] = {
+              fbid: fbid,
+              state:state?state:'initial',
+              last_seen: nowis,
+              session:false,
+              pickup_location: null,
+              destination_location: null,
+              pickup_coordinates: [],     // create the geospatial index},,
+              destination_coordinates:[]    
+            }
 
   }
 
@@ -330,6 +348,7 @@ function handleReceivedMessage(event) {
     // If we receive a text message, check to see if it matches any special
     // keywords and send back the corresponding example. Otherwise, just echo
     // the text we received.
+    console.log(messageText);
     switch (messageText.toLowerCase()) {
       case 'hi':
         sendWelcomeMessage(senderID);
@@ -407,7 +426,7 @@ function handleReceivedMessage(event) {
          break
 
       default:
-         sendEnteredMessage(senderID, messageText);
+         sendWelcomeMessage(senderID);
 
     }
   } else if (messageAttachments) {
@@ -494,15 +513,15 @@ console.log("sendCustoMessage "+ messageText);
     switch (messageText) {
 
       case 'TAKE_A_RIDE':
-        sendTakeaRide(recipientId);
+        setPickupRide(recipientId);
         break        
 
       case 'hello':
         sendWelcomeMessage(recipientId);
         break        
 
-      case 'who':
-        sendLocale(recipientId);
+      case 'PICKUP_BROWSE':
+        setDestinationRide(recipientId);
         break        
       
       case 'add keyword':
@@ -543,8 +562,8 @@ console.log("sendCustoMessage "+ messageText);
 
 
 
-function sendTakeaRide(recipientId){
-
+function setPickupRide(recipientId){
+sessions[recipientId].state='PICKUP_BROWSE';
   var messageData = {
     recipient: {
       id: recipientId
@@ -564,6 +583,67 @@ function sendTakeaRide(recipientId){
 
   callSendAPI(messageData);
 };
+
+
+function setDestinationRide(recipientId){
+sessions[recipientId].state='DESTINATION_BROWSE';
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: 'Step 2: Search from Map or type Destination',
+      metadata:'DESTINATION',
+      quick_replies: [
+        {
+          "content_type":"location",
+          "title":"DESTINATION",
+          "payload":"DESTINATION"
+        }       
+      ]
+    }
+  };
+
+  callSendAPI(messageData);
+};
+
+
+function setSchdulingRide(recipientId){
+
+sessions[recipientId].state='SET_SCHEDULING';
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message:{
+    "attachment":{
+      "type":"template",
+      "payload":{
+        "template_type":"generic",
+        "elements":[
+          {
+            "title":"Classic White T-Shirt",
+            "item_url":"https://petersfancyapparel.com/classic_white_tshirt",
+            "image_url":"https://petersfancyapparel.com/classic_white_tshirt.png",
+            "subtitle":"Soft white cotton t-shirt is back in style",
+            "buttons":[
+              {
+                "type":"web_url",
+                "url":"https://petersfancyapparel.com/classic_white_tshirt",
+                "title":"View Item",
+                "webview_height_ratio":"tall"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  }
+  };
+
+  callSendAPI(messageData);
+
+}
 function sendWelcomeMessage(recipientId) {
 
   var nameString = firstName + " " + lastName;
