@@ -9,6 +9,11 @@ const _ = require('underscore');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
 
+const wit = require('node-wit');
+ 
+const ACCESS_TOKEN = "EGW7CDB33FI6Y6LLAIPXLDY7YA7AWVVQ";
+
+
 app.set('port', (process.env.PORT || 4041))
 
 // parse application/x-www-form-urlencoded
@@ -78,7 +83,28 @@ process.on('SIGINT', function() {
 
 
 /* DATABASE PART END*/
+function callwitAPI(messageData,callback) {
+    request({
+        uri: 'https://api.wit.ai/message',
+        qs: {
+            v:20141022,
+            q:messageData
+        },  
+        headers: {
+             'Authorization': 'Bearer '+ACCESS_TOKEN,
+             'content-type': 'application/json'
+        },
+        method: 'GET'
 
+    }, function(error, response, body) {
+      if(response){
+       // console.log(typeof(JSON.parse(response.body)).outcomes);
+       // console.log(JSON.parse(response.body).outcomes);
+        callback(response.body)
+      }
+           
+    });
+}
 
 function verifyRequestSignature(req, res, buf) {
     var signature = req.headers["x-hub-signature"];
@@ -134,10 +160,21 @@ app.post('/webhook/', function(req, res) {
             pageEntry.messaging.forEach(function(messagingEvent) {
               console.log("Code Input");
               var sender=messagingEvent.sender.id;
-              console.log({sender:sender});
+            //  console.log({sender:sender});
               var sessionId = findOrCreateSession(sender)
-              console.log({messagingEvent:messagingEvent});
-                
+            //  console.log({messagingEvent:messagingEvent});
+ 
+/*                      const client = new wit({accessToken: ACCESS_TOKEN});
+                      client.message('what is the weather in London?', {})
+                      .then((data) => {
+                        console.log('Yay, got Wit.ai response: ' + JSON.stringify(data));
+                      })
+                      .catch(console.error);*/
+
+               
+
+
+
                 if (messagingEvent.optin) {
                   console.log("Message receive nsert")
                     receivedAuthentication(messagingEvent);
@@ -159,7 +196,19 @@ app.post('/webhook/', function(req, res) {
                         console.log(sessions[sender]);
                         setSchdulingRide(sender);
                         }else{
-                          receivedMessage(messagingEvent);  
+
+                          if(messagingEvent.message.text && sessionId.state==='SET_SCHEDULING'){
+                               callwitAPI(messagingEvent.message.text,function(response1) {
+
+                                    console.log(typeof(response1));
+                                    sessions[sender].schedule=JSON.parse(response1).outcomes[0].entities.datetime[0].value;
+                                    console.log(sessions[sender]);
+                                    sendSchduleText(sender);
+                               });
+                          }else{
+                            receivedMessage(messagingEvent);  
+                          }
+                          
                         }
                         
                    }
@@ -210,7 +259,9 @@ var findOrCreateSession = function (fbid,state) {
               sessions[fbid].pickup_location= null;
               sessions[fbid].destination_location=null;
               sessions[fbid].pickup_coordinates= [];     // create the geospatial index},,
-              sessions[fbid].destination_coordinates=[];  
+              sessions[fbid].destination_coordinates=[];
+              sessions[fbid].schedule=null   
+              
 
         }else{
               sessions[fbid].session=true;
@@ -227,7 +278,8 @@ var findOrCreateSession = function (fbid,state) {
               pickup_location: null,
               destination_location: null,
               pickup_coordinates: [],     // create the geospatial index},,
-              destination_coordinates:[]    
+              destination_coordinates:[],
+              schedule:null    
             }
 
   }
@@ -444,7 +496,8 @@ function receivedPostback(event) {
   {
     return;
   }
-  sendTextMessage(event, handleReceivedPostback);
+  //sendTextMessage(event, handleReceivedPostback);
+  handleReceivedPostback(event);
 }
 
 
@@ -524,12 +577,12 @@ console.log("sendCustoMessage "+ messageText);
         setDestinationRide(recipientId);
         break        
       
-      case 'add keyword':
-        addKeywordStep1(recipientId);
+      case 'CONFIRM_RIDE':
+        confirmRide(recipientId);
         break        
 
-      case 'list keywords':
-        sendKeywordList(recipientId);
+      case 'CANCEL_RIDE':
+        cancelRide(recipientId);
         break        
 
       case 'addkeyword_text':
@@ -615,34 +668,70 @@ sessions[recipientId].state='SET_SCHEDULING';
     recipient: {
       id: recipientId
     },
-    message:{
+    message: {
+      text: 'Step 3: Set Sheduling'
+    }
+  };
+
+  callSendAPI(messageData);
+
+}
+
+
+
+
+function confirmRide(recipientId) {
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: 'Thank you for choosing Oikhali,Our customer service will be knock as soon as possible'
+    }
+  };
+
+  callSendAPI(messageData);
+}
+
+function cancelRide(recipientId) {
+  sendWelcomeMessage(recipientId);
+}
+
+function sendSchduleText(recipientId){
+
+  var messageData = {
+ recipient:{
+    id:recipientId
+  },
+  message:{
     "attachment":{
       "type":"template",
       "payload":{
         "template_type":"generic",
         "elements":[
           {
-            "title":"Classic White T-Shirt",
-            "item_url":"https://petersfancyapparel.com/classic_white_tshirt",
-            "image_url":"https://petersfancyapparel.com/classic_white_tshirt.png",
-            "subtitle":"Soft white cotton t-shirt is back in style",
+            "title":sessions[recipientId].pickup_location+' - '+sessions[recipientId].destination_location,
+            "subtitle":sessions[recipientId].schedule,
             "buttons":[
               {
-                "type":"web_url",
-                "url":"https://petersfancyapparel.com/classic_white_tshirt",
-                "title":"View Item",
-                "webview_height_ratio":"tall"
-              }
+                "type":"postback",
+                "title":"Confirm",
+                "payload":"CONFIRM_RIDE"
+              },
+              {
+                "type":"postback",
+                "title":"Cancel",
+                "payload":"CANCEL_RIDE"
+              }              
             ]
           }
         ]
       }
     }
-  }
-  };
+}
+};
 
   callSendAPI(messageData);
-
 }
 function sendWelcomeMessage(recipientId) {
 
@@ -653,7 +742,7 @@ function sendWelcomeMessage(recipientId) {
       id: recipientId
     },
     message: {
-      text: 'Hi '+nameString+ ', please select option from the left menu or tap any option in below',
+      text: 'Hi, '+nameString+ ' please select option from the left menu or tap any option in below',
       quick_replies: [
         {
           "content_type":"text",
@@ -712,6 +801,8 @@ function callSendAPI(messageData) {
 
 
 
+
+
 function addPersistentMenu(){
  request({
     url: 'https://graph.facebook.com/v2.6/me/thread_settings',
@@ -724,7 +815,7 @@ function addPersistentMenu(){
             {
               type:"postback",
               title:"Take a New CNG Ride",
-              payload:"new_ride_request"
+              payload:"TAKE_A_RIDE"
             },
             {
               type:"postback",
