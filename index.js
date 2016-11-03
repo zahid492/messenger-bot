@@ -8,6 +8,7 @@ const TEXTS = require('./lib/texts.js');
 const _ = require('underscore');
 const mongoose = require('mongoose');
 const crypto = require('crypto');
+const rp = require('request-promise');
 
 const wit = require('node-wit');
  
@@ -585,8 +586,8 @@ console.log("sendCustoMessage "+ messageText);
         cancelRide(recipientId);
         break        
 
-      case 'addkeyword_text':
-        addKeywordText(recipientId);
+      case 'GET_STARTED_BUTTON':
+        sendGetStartedMsg(recipientId);
         break
 
       case 'addkeyword_button':
@@ -881,35 +882,85 @@ addPersistentMenu();
 
 var sessions = {}
 
+function sendGetStartedMsg(recipientId) {
+
+welcomeMessage(recipientId,function(response) {
+  var nameString=response.first_name +' '+response.last_name;
+ 
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: 'Hi, '+nameString+ ' please select option from the left menu or tap any option in below',
+      quick_replies: [
+        {
+          "content_type":"text",
+          "title":"Get a RIDE",
+          "payload":"TAKE_A_RIDE"
+        },
+        {
+          "content_type":"text",
+          "title":"Query",
+          "payload":"QUERY"
+        },
+       {
+          "content_type":"text",
+          "title":"Complain",
+          "payload":"COMPLAIN"
+        }        
+
+      ]
+    }
+  };
 
 
-
+      callSendAPI(messageData);
+  });
+}
 
 function welcomeMessage(senderFBId, callback) {
-    return getFBInfo(senderFBId).then(user => {
-        // console.log({
-        //     user: user
-        // });
-        callback(`Hi ${user.first_name}, welcome to Place Explorer!`);
+
+
+
+    var http = require('https');
+    var path = '/v2.6/' + senderFBId +'?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=' + PAGE_ACCESS_TOKEN;
+    var options = {
+      host: 'graph.facebook.com',
+      path: path
+    };
+
+    var req = http.get(options, function(res) {
+      //console.log('STATUS: ' + res.statusCode);
+      //console.log('HEADERS: ' + JSON.stringify(res.headers));
+
+      // Buffer the body entirely for processing as a whole.
+      var bodyChunks = [];
+      console.log()
+      res.on('data', function(chunk) {
+        // You can process streamed parts here...
+        bodyChunks.push(chunk);
+      }).on('end', function() {
+        var body = Buffer.concat(bodyChunks);
+        var bodyObject = JSON.parse(body);
+        firstName = bodyObject.first_name;
+        lastName = bodyObject.last_name;
+        if(!firstName) 
+          firstName = "undefined";
+        if(!lastName) 
+          lastName = "undefined";
+        console.log(bodyObject);
+        callback(bodyObject);
+      })
+    });
+    req.on('error', function(e) {
+      console.log('ERROR: ' + e.message);
     });
 }
 
 // Get the Facebook info of user we are talking to
 function getFBInfo(fbUserId) {
-    console.log({
-        fbUserId: fbUserId
-    });
-    return rp({
-            method: 'GET',
-            hostname: 'graph.facebook.com',
-            path: `/v2.6/${fbUserId}?fields=first_name,last_name,profile_pic,locale,timezone,gender&access_token=` + PAGE_ACCESS_TOKEN,
-            port: 443
-        })
-        .then(response => {
-            return JSON.parse(response.body);
-        }).catch((error) => {
-            return JSON.parse(error);
-        });
+
 }
 
 

@@ -26,6 +26,7 @@
     "mongoose": "^4.6.5",
     "node-wit": "^4.1.0",
     "request": "^2.76.0",
+    "request-promise": "^4.1.1",
     "underscore": "^1.8.3"
   }
 }
