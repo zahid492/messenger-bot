@@ -49,7 +49,7 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
 
 /*TEST WEBHOOK*/
 app.get('/', function(req, res) {
-    res.send('hello world i am a secret bot')
+    res.send('hello world i am a secret bot version 2')
 })
 
 
