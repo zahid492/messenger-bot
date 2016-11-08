@@ -30,7 +30,7 @@ const APP_SECRET = "0f116068d89484343c6a2af0ec7a5eab";
 // Arbitrary value used to validate a webhook
 const VALIDATION_TOKEN = "my_voice_is_my_password_verify_me";
 // Generate a page access token for your page from the App Dashboard
-const PAGE_ACCESS_TOKEN = "EAAC3EdKuMoUBAHuMeYqMrqpkXBVCojEvL7yZB1KEfPZCkNrFLPlZAS7JOBNFho5dzCIjPXfRJOENUdnebM5zzZAEdADqCkZCwfODwTJkfzobA3KlU0ecvwHtdy6iQlLqgshZCwhgFUP6oleQCoZCNC7xajHzb8LOyMxeCFNrwqmJgZDZD";
+const PAGE_ACCESS_TOKEN = "EAAC3EdKuMoUBAIdpHe7WNWRaeOvyPZAhCdU4WPwZBMU64hfZAFOiifKbvbIcHZBVOHW8S7t1ygwjhDtEZAlogckwjxmD9ZCQBe1B7ZCoinqBccWc92QmTM1pZCsMZCx8nJVRU3JJyg5ey549QkbboEHrwL00P1vflDcJywMwa6BrXnQZDZD";
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
   console.error("Missing config values");
   process.exit(1);
