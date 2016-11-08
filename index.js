@@ -614,7 +614,7 @@ function getStartedButton() {
       }]
     }
   }, function(error, response, body) {
-    console.log(response)
+
     if (error) {
       console.log('Error sending messages: ', error)
     } else if (response.body.error) {
