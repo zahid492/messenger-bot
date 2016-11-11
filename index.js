@@ -9,6 +9,7 @@ const mongoose = require('mongoose');
 const crypto = require('crypto');
 const rp = require('request-promise');
 const wit = require('node-wit');
+const path=require('path');
 const ACCESS_TOKEN = "EGW7CDB33FI6Y6LLAIPXLDY7YA7AWVVQ";
 app.set('port', (process.env.PORT || 8081))
   // parse application/x-www-form-urlencoded
@@ -18,6 +19,7 @@ app.use(bodyParser.urlencoded({
 app.use(bodyParser.json({
   verify: verifyRequestSignature
 }));
+app.use(express.static(path.join(__dirname, 'views')));
 // parse application/json
 app.use(bodyParser.json())
 var previousMessageHash = {};
@@ -30,8 +32,9 @@ const APP_SECRET = "0f116068d89484343c6a2af0ec7a5eab";
 // Arbitrary value used to validate a webhook
 const VALIDATION_TOKEN = "my_voice_is_my_password_verify_me";
 // Generate a page access token for your page from the App Dashboard
-const PAGE_ACCESS_TOKEN = "EAAC3EdKuMoUBAIdpHe7WNWRaeOvyPZAhCdU4WPwZBMU64hfZAFOiifKbvbIcHZBVOHW8S7t1ygwjhDtEZAlogckwjxmD9ZCQBe1B7ZCoinqBccWc92QmTM1pZCsMZCx8nJVRU3JJyg5ey549QkbboEHrwL00P1vflDcJywMwa6BrXnQZDZD";
+const PAGE_ACCESS_TOKEN = "EAAC3EdKuMoUBAD0jZBsZAjZAqtFfZC6VEvXHgm5Bo0NVJAVbMhiGikG5IZCMY5PupSAvICd0DUTAtMOKHgLTuMZBRVUqKXT30pNz7H9ESQxGUXGcZAf9R5ipBXjJrPsqTuuTYWf464oWz7Ha5KvXaPlT9YbLCTGRBtuWWKGvCO4kgZDZD";
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
+
   console.error("Missing config values");
   process.exit(1);
 }
@@ -39,6 +42,20 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
 app.get('/', function(req, res) {
     res.send('hello world i am a secret bot')
   })
+app.get('/delivery', function(req, res) {
+      fs.readFile("index.html", function(err, data){
+         if(err){
+            response.writeHead(404);
+            response.write("Not Found!");
+         }
+         else{
+            response.writeHead(200, {'Content-Type': contentType});
+            response.write(data);
+         }
+         response.end();
+      });
+  })
+
   /* DATABASE PART START*/
 const dbconfig = require('./lib/config');
 //////CONECTION FOR OPENSHIFT
@@ -587,6 +604,13 @@ function addPersistentMenu() {
         type: "web_url",
         title: "About Us",
         url: "http://www.oikhali.com/"
+      },
+      {
+       type:"web_url",
+       title:"Checkout",
+       url:"https://6659e15f.ngrok.io",
+       webview_height_ratio: "tall",
+       messenger_extensions: true
       }]
     }
   }, function(error, response, body) {
@@ -598,6 +622,29 @@ function addPersistentMenu() {
     }
   })
 }
+function addWhistlingDomain() {
+  request({
+    url: 'https://graph.facebook.com/v2.6/me/thread_settings',
+    qs: {
+      access_token: PAGE_ACCESS_TOKEN
+    },
+    method: 'POST',
+    json: {
+      setting_type: "domain_whitelisting",
+      whitelisted_domains: ["https://6659e15f.ngrok.io"],
+      domain_action_type: "add"
+    }
+  }, function(error, response, body) {
+    // console.log(response)
+    if (error) {
+      console.log('Error sending messages: ', error)
+    } else if (response.body.error) {
+      console.log('Error: ', response.body.error)
+    }
+  })
+}
+
+addWhistlingDomain();
 
 function getStartedButton() {
   request({

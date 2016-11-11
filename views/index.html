@@ -1,0 +1,47 @@
+<html>
+
+<head>
+<script>
+(function(d, s, id){
+  var js, fjs = d.getElementsByTagName(s)[0];
+  if (d.getElementById(id)) {return;}
+  js = d.createElement(s); js.id = id;
+  js.src = "//connect.facebook.com/en_US/messenger.Extensions.js";
+  fjs.parentNode.insertBefore(js, fjs);
+}(document, 'script', 'Messenger'));
+  window.extAsyncInit = function() {
+    // the Messenger Extensions JS SDK is done loading 
+  };
+  
+  
+  
+ function getUserId() {
+	MessengerExtensions.getUserID(function success(uids) {
+	var psid = uids.psid;
+	document.getElementById('header').innerHTML=psid;
+	
+	}, function error(err) {      
+	document.getElementById('header').innerHTML=err;
+	});   
+}
+function closeWindow() {
+  MessengerExtensions.requestCloseBrowser(function success() {
+  }, function error(err) {
+  }); 
+ }
+ 
+</script>
+
+
+</head>
+
+
+<body>
+
+<button onclick="getUserId()">Woah</button>
+<button onclick="closeWindow()">Yay</button>
+<p>Hello Dhaka</p>
+<p id="header"></p>
+</body>
+
+</html>
