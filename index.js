@@ -608,7 +608,7 @@ function addPersistentMenu() {
       {
        type:"web_url",
        title:"Checkout",
-       url:"https://6659e15f.ngrok.io",
+       url:"https://oikhalibot.zahidur.me/",
        webview_height_ratio: "tall",
        messenger_extensions: true
       }]
@@ -631,7 +631,7 @@ function addWhistlingDomain() {
     method: 'POST',
     json: {
       setting_type: "domain_whitelisting",
-      whitelisted_domains: ["https://6659e15f.ngrok.io"],
+      whitelisted_domains: ["https://oikhalibot.zahidur.me/"],
       domain_action_type: "add"
     }
   }, function(error, response, body) {
