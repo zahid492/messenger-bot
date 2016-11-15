@@ -550,7 +550,45 @@ function sendWelcomeMessage(recipientId) {
       }]
     }
   };
+
+
+
+
+  var messageData2 = {
+    recipient: {
+      id: recipientId
+    },
+    message:{
+    "attachment":{
+      "type":"template",
+      "payload":{
+        "template_type":"button",
+        "text":"What do you want to do next?",
+        "buttons":[
+          {
+            "type":"web_url",
+            "url":"https://facebook.com/zahid.rahman.50",
+            "title":"Show Website"
+          },
+          {
+                "type":"web_url",
+                "url":"https://oikhalibot.zahidur.me",
+                "title":"Select Criteria",
+                "webview_height_ratio": "tall",
+                "messenger_extensions": true,  
+                "fallback_url": "https://oikhalibot.zahidur.me/fallback"
+          }
+        ]
+      }
+    }
+  }
+  };
+
+
+
   callSendAPI(messageData);
+
+  callSendAPI(messageData2);
 }
 
 function callSendAPI(messageData) {
@@ -606,11 +644,11 @@ function addPersistentMenu() {
         url: "http://www.oikhali.com/"
       },
       {
-       type:"web_url",
-       title:"Checkout",
-       url:"https://oikhalibot.zahidur.me/",
-       webview_height_ratio: "tall",
-       messenger_extensions: true
+                type:"web_url",
+                url:"https://oikhalibot.zahidur.me",
+                title:"Select Criteria",
+                webview_height_ratio: "tall",
+                messenger_extensions: true
       }]
     }
   }, function(error, response, body) {
