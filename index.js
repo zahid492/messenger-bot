@@ -529,27 +529,27 @@ function sendSchduleText(recipientId) {
 
 function sendWelcomeMessage(recipientId) {
   var nameString = firstName + " " + lastName;
-  var messageData = {
-    recipient: {
-      id: recipientId
-    },
-    message: {
-      text: 'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
-      quick_replies: [{
-        "content_type": "text",
-        "title": "Get a RIDE",
-        "payload": "TAKE_A_RIDE"
-      }, {
-        "content_type": "text",
-        "title": "Query",
-        "payload": "QUERY"
-      }, {
-        "content_type": "text",
-        "title": "Complain",
-        "payload": "COMPLAIN"
-      }]
-    }
-  };
+  // var messageData = {
+  //   recipient: {
+  //     id: recipientId
+  //   },
+  //   message: {
+  //     text: 'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
+  //     quick_replies: [{
+  //       "content_type": "text",
+  //       "title": "Get a RIDE",
+  //       "payload": "TAKE_A_RIDE"
+  //     }, {
+  //       "content_type": "text",
+  //       "title": "Query",
+  //       "payload": "QUERY"
+  //     }, {
+  //       "content_type": "text",
+  //       "title": "Complain",
+  //       "payload": "COMPLAIN"
+  //     }]
+  //   }
+  // };
 
 
 
@@ -563,7 +563,7 @@ function sendWelcomeMessage(recipientId) {
       "type":"template",
       "payload":{
         "template_type":"button",
-        "text":"What do you want to do next?",
+        "text":'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
         "buttons":[
           {
             "type":"web_url",
@@ -586,7 +586,7 @@ function sendWelcomeMessage(recipientId) {
 
 
 
-  callSendAPI(messageData);
+  //callSendAPI(messageData);
 
   callSendAPI(messageData2);
 }
