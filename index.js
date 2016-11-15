@@ -576,7 +576,7 @@ function sendWelcomeMessage(recipientId) {
                 "title":"Select Criteria",
                 "webview_height_ratio": "tall",
                 "messenger_extensions": true,  
-                "fallback_url": "https://oikhalibot.zahidur.me/fallback"
+                "fallback_url": "https://oikhalibot.zahidur.me"
           }
         ]
       }
