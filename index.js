@@ -529,66 +529,34 @@ function sendSchduleText(recipientId) {
 
 function sendWelcomeMessage(recipientId) {
   var nameString = firstName + " " + lastName;
-  // var messageData = {
-  //   recipient: {
-  //     id: recipientId
-  //   },
-  //   message: {
-  //     text: 'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
-  //     quick_replies: [{
-  //       "content_type": "text",
-  //       "title": "Get a RIDE",
-  //       "payload": "TAKE_A_RIDE"
-  //     }, {
-  //       "content_type": "text",
-  //       "title": "Query",
-  //       "payload": "QUERY"
-  //     }, {
-  //       "content_type": "text",
-  //       "title": "Complain",
-  //       "payload": "COMPLAIN"
-  //     }]
-  //   }
-  // };
-
-
-
-
-  var messageData2 = {
+  var messageData = {
     recipient: {
       id: recipientId
     },
-    message:{
-    "attachment":{
-      "type":"template",
-      "payload":{
-        "template_type":"button",
-        "text":'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
-        "buttons":[
-          {
-            "type":"web_url",
-            "url":"https://facebook.com/zahid.rahman.50",
-            "title":"Show Website"
-          },
-          {
-                "type":"web_url",
-                "url":"https://oikhalibot.zahidur.me",
-                "title":"Select Criteria",
-                "webview_height_ratio": "tall",
-                "messenger_extensions": true,  
-                "fallback_url": "https://oikhalibot.zahidur.me"
-          }
-        ]
-      }
+    message: {
+      text: 'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
+      quick_replies: [{
+        "content_type": "text",
+        "title": "Get a RIDE",
+        "payload": "TAKE_A_RIDE"
+      }, {
+        "content_type": "text",
+        "title": "Query",
+        "payload": "QUERY"
+      }, {
+        "content_type": "text",
+        "title": "Complain",
+        "payload": "COMPLAIN"
+      }]
     }
-  }
   };
 
 
 
-  //callSendAPI(messageData);
 
-  callSendAPI(messageData2);
+  callSendAPI(messageData);
+
+
 }
 
 function callSendAPI(messageData) {
@@ -711,7 +679,7 @@ getStartedButton();
 addPersistentMenu();
 
 function sendGetStartedMsg(recipientId) {
-  welcomeMessage(recipientId, function(response) {
+/*  welcomeMessage(recipientId, function(response) {
     var nameString = response.first_name + ' ' + response.last_name;
     var messageData = {
       recipient: {
@@ -735,7 +703,43 @@ function sendGetStartedMsg(recipientId) {
       }
     };
     callSendAPI(messageData);
-  });
+  });*/
+  var nameString = firstName + " " + lastName;
+
+
+  var messageData2 = {
+    recipient: {
+      id: recipientId
+    },
+    message:{
+    "attachment":{
+      "type":"template",
+      "payload":{
+        "template_type":"button",
+        "text":'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
+        "buttons":[
+          {
+            "type":"web_url",
+            "url":"https://facebook.com/zahid.rahman.50",
+            "title":"Show Website"
+          },
+          {
+                "type":"web_url",
+                "url":"https://oikhalibot.zahidur.me",
+                "title":"Select Criteria",
+                "webview_height_ratio": "tall",
+                "messenger_extensions": true,  
+                "fallback_url": "https://oikhalibot.zahidur.me"
+          }
+        ]
+      }
+    }
+  }
+  };
+
+  callSendAPI(messageData2);
+
+  
 }
 
 function welcomeMessage(senderFBId, callback) {
