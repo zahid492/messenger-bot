@@ -574,7 +574,7 @@ function sendWelcomeMessage(recipientId) {
                 "type":"web_url",
                 "url":"https://oikhalibot.zahidur.me",
                 "title":"Select Criteria",
-                "webview_height_ratio": "full",
+                "webview_height_ratio": "tall",
                 "messenger_extensions": true,  
                 "fallback_url": "https://oikhalibot.zahidur.me/fallback"
           }
@@ -647,7 +647,7 @@ function addPersistentMenu() {
                 type:"web_url",
                 url:"https://oikhalibot.zahidur.me",
                 title:"Select Criteria",
-                webview_height_ratio: "full",
+                webview_height_ratio: "tall",
                 messenger_extensions: true
       }]
     }
