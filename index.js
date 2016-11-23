@@ -11,6 +11,13 @@ const rp = require('request-promise');
 const wit = require('node-wit');
 const path=require('path');
 const ACCESS_TOKEN = "EGW7CDB33FI6Y6LLAIPXLDY7YA7AWVVQ";
+
+const redis = require("redis"),
+    client = redis.createClient();
+
+
+const User=require('./model/user');
+
 app.set('port', (process.env.PORT || 8081))
   // parse application/x-www-form-urlencoded
 app.use(bodyParser.urlencoded({
@@ -21,7 +28,7 @@ app.use(bodyParser.json({
 }));
 app.use(express.static(path.join(__dirname, 'views')));
 // parse application/json
-app.use(bodyParser.json())
+app.use(bodyParser.json());
 var previousMessageHash = {};
 var senderContext = {};
 var isStopped = false;
@@ -42,26 +49,17 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN)) {
 app.get('/', function(req, res) {
     res.send('hello world i am a secret bot')
   })
-app.get('/delivery', function(req, res) {
-      fs.readFile("index.html", function(err, data){
-         if(err){
-            response.writeHead(404);
-            response.write("Not Found!");
-         }
-         else{
-            response.writeHead(200, {'Content-Type': contentType});
-            response.write(data);
-         }
-         response.end();
-      });
-  })
+
 
   /* DATABASE PART START*/
 const dbconfig = require('./lib/config');
 //////CONECTION FOR OPENSHIFT
+// mongoose.Promise = global.Promise;
 mongoose.connect(dbconfig.options.uri); // connect to our database
 // When successfully connected
 mongoose.connection.on('connected', function() {
+
+
   console.log('Mongoose default connection open to ' + dbconfig.options.uri);
 });
 mongoose.connection.on('error', function(err) {
@@ -79,6 +77,44 @@ process.on('SIGINT', function() {
   });
 });
 /* DATABASE PART END*/
+
+client.on("error", function (err) {
+    console.log("Error " + err);
+});
+
+var testid=2121212;
+// client.hmset([testid ,"test keys 1", "test val 1", "test keys 2", "test val 2"], function (err, res) {
+//   console.log(err);
+//   console.log(res);
+
+// });
+
+// client.hmset([testid, "test keys 3", "test val 3"]);
+// client.hget(testid,"test keys 1", "test keys 2",function (err, reply) {
+//     console.log(reply); // Will print `OK`
+// });
+
+
+// var testid1=2424;
+// client.exists(testid,function (err, reply) {
+//     console.log(reply); // Will print `OK`
+// });
+
+//     var user= new User({
+//     first_name:'Zahid',
+//     last_name:'Rahman',
+//     phone_number:'01829202258',
+//     address:'Uttara-12,House No-28'
+//   });
+
+// user.save(function (err,res) {
+//   if (err) {
+//     console.log(err);
+//   } else {
+//     console.log(res);
+//   }
+// });
+
 function callwitAPI(messageData, callback) {
   request({
     uri: 'https://api.wit.ai/message',
@@ -122,6 +158,7 @@ function verifyRequestSignature(req, res, buf) {
   // recommended to inject access tokens as environmental variables, e.g.
   // const token = process.env.PAGE_ACCESS_TOKEN
 app.get('/webhook/', function(req, res) {
+
     if (req.query['hub.verify_token'] === 'my_voice_is_my_password_verify_me') {
       res.send(req.query['hub.challenge'])
     } else {
@@ -129,6 +166,7 @@ app.get('/webhook/', function(req, res) {
     }
   })
   // to post data
+
 app.post('/webhook/', function(req, res) {
   var data = req.body;
   // Make sure this is a page subscription
@@ -140,48 +178,23 @@ app.post('/webhook/', function(req, res) {
       var timeOfEvent = pageEntry.time;
       // Iterate over each messaging event
       pageEntry.messaging.forEach(function(messagingEvent) {
-        console.log("Code Input");
+        
         var sender = messagingEvent.sender.id;
-        //  console.log({sender:sender});
-        var sessionId = findOrCreateSession(sender);
+          console.log({sender:sender});
+         var sessionId = findOrCreateSession(sender);
         if (messagingEvent.optin) {
-          console.log("Message receive nsert")
-          receivedAuthentication(messagingEvent);
+         // receivedAuthentication(messagingEvent);
         } else if (messagingEvent.message) {
-          console.log("Message event insert");
-          if (messagingEvent.message.attachments && messagingEvent.message.attachments[0].type === 'location' && sessionId.state === 'PICKUP_BROWSE') {
-            sessions[sender].pickup_coordinates = [messagingEvent.message.attachments[0].payload.coordinates.lat, messagingEvent.message.attachments[0].payload.coordinates.long];
-            sessions[sender].pickup_location = messagingEvent.message.attachments[0].title;
-            setDestinationRide(sender);
-            console.log(sessions[sender]);
-          } else {
-            console.log("Message event insert")
-            if (messagingEvent.message.attachments && messagingEvent.message.attachments[0].type === 'location' && sessionId.state === 'DESTINATION_BROWSE') {
-              sessions[sender].destination_coordinates = [messagingEvent.message.attachments[0].payload.coordinates.lat, messagingEvent.message.attachments[0].payload.coordinates.long];
-              sessions[sender].destination_location = messagingEvent.message.attachments[0].title;
-              console.log(sessions[sender]);
-              setSchdulingRide(sender);
-            } else {
-              if (messagingEvent.message.text && sessionId.state === 'SET_SCHEDULING') {
-                callwitAPI(messagingEvent.message.text, function(response1) {
-                  console.log(typeof(response1));
-                  sessions[sender].schedule = JSON.parse(response1)
-                    .outcomes[0].entities.datetime[0].value;
-                  console.log(sessions[sender]);
-                  sendSchduleText(sender);
-                });
-              } else {
-                receivedMessage(messagingEvent);
-              }
-            }
-          }
+           client.hget(sender,'state',function(err,state){
+              sendCustomMessage(messagingEvent,sender,state);
+           });
         } else if (messagingEvent.delivery) {
           //receivedDeliveryConfirmation(messagingEvent);
         } else if (messagingEvent.postback) {
           console.log("Postback");
-          receivedPostback(messagingEvent);
+       //   receivedPostback(messagingEvent);
         } else if (messagingEvent.read) {
-          receivedMessageRead(messagingEvent);
+          //receivedMessageRead(messagingEvent);
         } else {
           console.log("Webhook received unknown messagingEvent: ", messagingEvent);
         }
@@ -195,43 +208,64 @@ app.post('/webhook/', function(req, res) {
   }
 });
 var sessions = {}
-var findOrCreateSession = function(fbid, state) {
-    var sessionData;
-    const SESSION_DURATION = 180000;
-    const nowis = new Date()
-      .getTime();
-    if (sessions[fbid]) {
-      console.log("OLD Session ID");
-      if (nowis - sessions[fbid].last_seen > SESSION_DURATION) {
-        sessions[fbid].session = false;
-        sessions[fbid].last_seen = nowis;
-        sessions[fbid].pickup_location = null;
-        sessions[fbid].destination_location = null;
-        sessions[fbid].pickup_coordinates = []; // create the geospatial index},,
-        sessions[fbid].destination_coordinates = [];
-        sessions[fbid].schedule = null
-      } else {
-        sessions[fbid].session = true;
+var findOrCreateSession = function(fbid) {
+  var sessionData;
+  const SESSION_DURATION = 18000;
+  const nowis = new Date().getTime();
+  console.log({
+    fbid: fbid
+  });
+  client.exists(fbid, function(err, res) {
+    client.hget(fbid, 'state', function(err, obj) {
+      console.dir(obj);
+     var state = obj;
+      if (state !== 'PHONE_PLATE_SENT') {
+        console.log(res);
+        if (res === 1) {
+          client.hget(fbid, "last_wake_time", function(err, last_wake_time) {
+            console.log({
+              last_wake_time1: last_wake_time
+            });
+            if (last_wake_time) {
+              if (nowis - last_wake_time > SESSION_DURATION) {
+                client.hmset([fbid, "last_wake_time", nowis,'session', true,'state','INITIAL']);  //jodi time exceed hoi
+                sendGetStartedMsg(fbid);
+              } else {
+                client.hmset([fbid, "last_wake_time", nowis,'session', true]); //jodi time exceed na hoi
+                //return new entry
+              }
+            }
+          });
+        }else{
+        if (res === 0) {
+          User.findOne({
+            psid: fbid
+          }, function(err, user) {
+            if (err) {
+              console.log(err);
+            }
+            console.log({
+              response: user
+            });
+            if (user && !user.psid) {
+              //STEP:Phone number Plate::::send phone number plate
+              client.hmset([fbid, "last_wake_time", nowis, 'session', true, 'state', 'PHONE_PLATE_SENT']);
+              sendGetStartedMsg(fbid);
+              searchphoneNumber(fbid);
+            } else {
+              //Step Identification
+              //client.hmset([fbid ,"last_wake_time",nowis,'session',true]);  
+              sendGetStartedMsg(fbid);
+            }
+          });
+        }          
+        }
+
       }
-    } else {
-      console.log("New Session ID");
-      sessions[fbid] = {
-        fbid: fbid,
-        state: state ? state : 'initial',
-        last_seen: nowis,
-        session: false,
-        pickup_location: null,
-        destination_location: null,
-        pickup_coordinates: [], // create the geospatial index},,
-        destination_coordinates: [],
-        schedule: null
-      }
-    }
-    // No session so we will create one
-    console.log(nowis);
-    console.log(nowis - sessions[fbid].last_seen);
-    return sessions[fbid];
-  }
+    });
+  });
+
+}
   /*RECEIVE MESSAGE START*/
 function receivedMessage(event) {
   callGetLocaleAPI(event, handleReceivedMessage);
@@ -307,7 +341,7 @@ function handleReceivedMessage(event) {
     } else if (quickReply) {
       var quickReplyPayload = quickReply.payload;
       messageText = quickReplyPayload;
-      sendCustomMessage(senderID, messageText);
+      sendCustomMessage(event,senderID, messageText);
       return;
     }
     if (messageText) {
@@ -400,14 +434,14 @@ function handleReceivedPostback(event) {
       "at %d", senderID, recipientID, payload, timeOfPostback);
     // When a postback is called, we'll send a message back to the sender to 
     // let them know it was successful
-    sendCustomMessage(senderID, payload);
+    sendCustomMessage(event,senderID, payload);
   }
   /*RECEIVE Postback END*/
-function sendCustomMessage(recipientId, messageText) {
+function sendCustomMessage(event,recipientId, messageText) {
   console.log("sendCustoMessage " + messageText);
   switch (messageText) {
-    case 'TAKE_A_RIDE':
-      setPickupRide(recipientId);
+    case 'PHONE_PLATE_SENT':
+      userIdentify(event,recipientId);
       break
     case 'hello':
       sendWelcomeMessage(recipientId);
@@ -423,13 +457,88 @@ function sendCustomMessage(recipientId, messageText) {
       break
     case 'GET_STARTED_BUTTON':
       sendGetStartedMsg(recipientId);
-      break
+      break  
     default:
       sendWelcomeMessage(recipientId, messageText);
   }
-  previousMessageHash[recipientId] = messageText.toLowerCase();
+  //previousMessageHash[recipientId] = messageText.toLowerCase();
 }
+function searchphoneNumber(recipientId) {
+ var searchphoneNumberplate=true;
+  var messageData = {
+    recipient: {
+      id: recipientId
+    },
+    message: {
+      text: 'Please Send your phone number(e.g : 01829202258)',
+      metadata: 'PHONE_NUMBER'
+    }
+  };
+  callSendAPI(messageData);
+};
 
+
+function userIdentify(event,recipientId){
+
+  console.log(event);
+
+     User.findOne({phone_number: event.message.text},function(err, user) {
+            if (err) {
+              console.log(err);
+            }
+            console.log(user);
+            if(user){
+
+              user.psid=recipientId;
+              user.save(function(err,data){
+                    client.hmset([fbid, "last_wake_time", nowis, 'session', true, 'state', 'USER_IDENTITY_SHOW']);
+                    var messageData = {
+                        recipient: {
+                          id: recipientId
+                        },
+                        message: {
+                          "attachment": {
+                            "type": "template",
+                            "payload": {
+                              "template_type": "generic",
+                              "elements": [{
+                                "title": data.first_name + ' ' + data.last_name,
+                                "subtitle": data.phone_number+ '  '+data.address,
+                                "buttons": [{
+                                  "type": "postback",
+                                  "title": "Confirm",
+                                  "payload": "CONFIRM_PICKUPINFO"
+                                }, {
+                                  "type": "postback",
+                                  "title": "Cancel",
+                                  "payload": "CANCEL_PICKUPINFO"
+                                }]
+                              }]
+                            }
+                          }
+                        }
+                      };
+
+                callSendAPI(messageData);  
+              })  
+            }else{
+                 var messageData = {
+                      recipient: {
+                        id: recipientId
+                      },
+                      message: {
+                        text: 'You could not specify your detaile ,please provide your phone number(e.g : 01829202258) again.' 
+                      }
+                   };
+
+                callSendAPI(messageData);              
+            }
+      
+
+          });
+
+
+}
 function setPickupRide(recipientId) {
   sessions[recipientId].state = 'PICKUP_BROWSE';
   var messageData = {
@@ -537,8 +646,8 @@ function sendWelcomeMessage(recipientId) {
       text: 'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
       quick_replies: [{
         "content_type": "text",
-        "title": "Get a RIDE",
-        "payload": "TAKE_A_RIDE"
+        "title": "Delivery Order",
+        "payload": "DELIVERY_ORDER"
       }, {
         "content_type": "text",
         "title": "Query",
@@ -551,44 +660,8 @@ function sendWelcomeMessage(recipientId) {
     }
   };
 
-
-
-
-  var messageData2 = {
-    recipient: {
-      id: recipientId
-    },
-    message:{
-    "attachment":{
-      "type":"template",
-      "payload":{
-        "template_type":"button",
-        "text":"What do you want to do next?",
-        "buttons":[
-          {
-            "type":"web_url",
-            "url":"https://petersapparel.parseapp.com",
-            "title":"Show Website"
-          },
-          {
-                "type":"web_url",
-                "url":"https://oikhalibot.zahidur.me",
-                "title":"Select Criteria",
-                "webview_height_ratio": "tall",
-                "messenger_extensions": true,  
-                "fallback_url": "https://oikhalibot.zahidur.me/fallback"
-          }
-        ]
-      }
-    }
-  }
-  };
-
-
-
   callSendAPI(messageData);
 
-  callSendAPI(messageData2);
 }
 
 function callSendAPI(messageData) {
@@ -660,29 +733,7 @@ function addPersistentMenu() {
     }
   })
 }
-function addWhistlingDomain() {
-  request({
-    url: 'https://graph.facebook.com/v2.6/me/thread_settings',
-    qs: {
-      access_token: PAGE_ACCESS_TOKEN
-    },
-    method: 'POST',
-    json: {
-      setting_type: "domain_whitelisting",
-      whitelisted_domains: ["https://oikhalibot.zahidur.me/"],
-      domain_action_type: "add"
-    }
-  }, function(error, response, body) {
-    // console.log(response)
-    if (error) {
-      console.log('Error sending messages: ', error)
-    } else if (response.body.error) {
-      console.log('Error: ', response.body.error)
-    }
-  })
-}
 
-addWhistlingDomain();
 
 function getStartedButton() {
   request({
@@ -721,16 +772,12 @@ function sendGetStartedMsg(recipientId) {
         text: 'Hi, ' + nameString + ' please select option from the left menu or tap any option in below',
         quick_replies: [{
           "content_type": "text",
-          "title": "Get a RIDE",
-          "payload": "TAKE_A_RIDE"
+          "title": "Delivery Order",
+          "payload": "DELIVERY_ORDER"
         }, {
           "content_type": "text",
           "title": "Query",
           "payload": "QUERY"
-        }, {
-          "content_type": "text",
-          "title": "Complain",
-          "payload": "COMPLAIN"
         }]
       }
     };
